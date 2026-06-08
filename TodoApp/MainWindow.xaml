@@ -250,7 +250,8 @@
                 <StackPanel>
                     <!-- Active tasks -->
                     <ListBox ItemsSource="{Binding ActiveTasks}"
-                             SelectedItem="{Binding SelectedTask}"
+                             SelectedItem="{Binding SelectedTask, Mode=OneWay}"
+                             SelectionChanged="TaskList_SelectionChanged"
                              BorderThickness="0"
                              Background="Transparent"
                              ItemContainerStyle="{StaticResource TaskListItem}">

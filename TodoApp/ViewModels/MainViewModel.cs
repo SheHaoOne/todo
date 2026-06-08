@@ -17,6 +17,7 @@ public class MainViewModel : ViewModelBase
     private string _newListName = string.Empty;
     private bool _showCompleted;
     private bool _isDetailPanelOpen;
+    private bool _isRefreshingTasks;
     private string _newStepTitle = string.Empty;
 
     public MainViewModel() : this(new JsonDataService()) { }
@@ -78,6 +79,7 @@ public class MainViewModel : ViewModelBase
         set
         {
             if (ReferenceEquals(_selectedTask, value)) return;
+            if (_isRefreshingTasks && value is null) return;
 
             if (_selectedTask != null)
                 _selectedTask.IsSelected = false;
@@ -223,35 +225,54 @@ public class MainViewModel : ViewModelBase
     private void RefreshTasks()
     {
         var selectedId = SelectedTask?.Id;
+        var preservedTask = SelectedTask;
 
-        ActiveTasks.Clear();
-        CompletedTasks.Clear();
-
-        if (SelectedList != null)
+        _isRefreshingTasks = true;
+        try
         {
-            var active = TaskFilterService.FilterTasks(_appData.Tasks, SelectedList.Model)
-                .OrderBy(t => t.SortOrder)
-                .ThenByDescending(t => t.CreatedAt);
+            ActiveTasks.Clear();
+            CompletedTasks.Clear();
 
-            foreach (var task in active)
-                ActiveTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
+            if (SelectedList != null)
+            {
+                var active = TaskFilterService.FilterTasks(_appData.Tasks, SelectedList.Model)
+                    .OrderBy(t => t.SortOrder)
+                    .ThenByDescending(t => t.CreatedAt);
 
-            var completed = TaskFilterService.FilterCompletedTasks(_appData.Tasks, SelectedList.Model)
-                .OrderByDescending(t => t.CompletedAt);
+                foreach (var task in active)
+                    ActiveTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
 
-            foreach (var task in completed)
-                CompletedTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
+                var completed = TaskFilterService.FilterCompletedTasks(_appData.Tasks, SelectedList.Model)
+                    .OrderByDescending(t => t.CompletedAt);
+
+                foreach (var task in completed)
+                    CompletedTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
+            }
 
             if (selectedId.HasValue)
             {
-                var restored = ActiveTasks.FirstOrDefault(t => t.Id == selectedId.Value)
-                    ?? CompletedTasks.FirstOrDefault(t => t.Id == selectedId.Value);
-
-                if (restored != null)
-                    SelectedTask = restored;
-                else
+                var model = _appData.Tasks.FirstOrDefault(t => t.Id == selectedId.Value);
+                if (model is null)
+                {
                     CloseDetail();
+                }
+                else
+                {
+                    var inList = ActiveTasks.FirstOrDefault(t => t.Id == selectedId.Value)
+                        ?? CompletedTasks.FirstOrDefault(t => t.Id == selectedId.Value);
+
+                    if (inList is not null)
+                        SelectedTask = inList;
+                    else if (preservedTask?.Id == selectedId.Value)
+                        SelectedTask = preservedTask;
+                    else
+                        SelectedTask = new TaskItemViewModel(model, OnTaskSaveRequested, OnTaskMetadataChanged);
+                }
             }
+        }
+        finally
+        {
+            _isRefreshingTasks = false;
         }
 
         OnPropertyChanged(nameof(HasCompletedTasks));
