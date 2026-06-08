@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using TodoApp.ViewModels;
 
 namespace TodoApp;
@@ -11,6 +12,20 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        LoadWindowIcon();
+    }
+
+    private void LoadWindowIcon()
+    {
+        try
+        {
+            Icon = BitmapFrame.Create(
+                new Uri("pack://application:,,,/Resources/app.ico", UriKind.Absolute));
+        }
+        catch
+        {
+            // 图标加载失败时不影响应用启动
+        }
     }
 
     private void TaskList_SelectionChanged(object sender, SelectionChangedEventArgs e)
