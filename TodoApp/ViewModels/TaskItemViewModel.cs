@@ -5,6 +5,7 @@ namespace TodoApp.ViewModels;
 public class TaskItemViewModel : ViewModelBase
 {
     private readonly Action<TaskItemViewModel>? _onSaveRequested;
+    private readonly Action<TaskItemViewModel>? _onMetadataChanged;
     private string _title = string.Empty;
     private bool _isCompleted;
     private bool _isImportant;
@@ -14,10 +15,13 @@ public class TaskItemViewModel : ViewModelBase
     private string _notes = string.Empty;
     private bool _isSelected;
 
-    public TaskItemViewModel(TodoTask task, Action<TaskItemViewModel>? onSaveRequested = null)
+    public TaskItemViewModel(TodoTask task,
+        Action<TaskItemViewModel>? onSaveRequested = null,
+        Action<TaskItemViewModel>? onMetadataChanged = null)
     {
         Model = task;
         _onSaveRequested = onSaveRequested;
+        _onMetadataChanged = onMetadataChanged;
         _title = task.Title;
         _isCompleted = task.IsCompleted;
         _isImportant = task.IsImportant;
@@ -54,7 +58,7 @@ public class TaskItemViewModel : ViewModelBase
             OnPropertyChanged(nameof(DueDateDisplay));
             OnPropertyChanged(nameof(IsOverdue));
             OnPropertyChanged(nameof(IsDueToday));
-            NotifyChanged();
+            NotifyMetadataChanged();
         }
     }
 
@@ -65,7 +69,7 @@ public class TaskItemViewModel : ViewModelBase
         {
             if (!SetProperty(ref _isImportant, value)) return;
             Model.IsImportant = value;
-            NotifyChanged();
+            NotifyMetadataChanged();
         }
     }
 
@@ -76,7 +80,7 @@ public class TaskItemViewModel : ViewModelBase
         {
             if (!SetProperty(ref _isMyDay, value)) return;
             Model.IsMyDay = value;
-            NotifyChanged();
+            NotifyMetadataChanged();
         }
     }
 
@@ -85,13 +89,14 @@ public class TaskItemViewModel : ViewModelBase
         get => _dueDate;
         set
         {
-            if (!SetProperty(ref _dueDate, value)) return;
-            Model.DueDate = value;
+            var normalized = value?.Date;
+            if (!SetProperty(ref _dueDate, normalized)) return;
+            Model.DueDate = normalized;
             OnPropertyChanged(nameof(DueDateDisplay));
             OnPropertyChanged(nameof(HasDueDate));
             OnPropertyChanged(nameof(IsOverdue));
             OnPropertyChanged(nameof(IsDueToday));
-            NotifyChanged();
+            NotifyMetadataChanged();
         }
     }
 
@@ -162,4 +167,6 @@ public class TaskItemViewModel : ViewModelBase
     }
 
     private void NotifyChanged() => _onSaveRequested?.Invoke(this);
+
+    private void NotifyMetadataChanged() => _onMetadataChanged?.Invoke(this);
 }

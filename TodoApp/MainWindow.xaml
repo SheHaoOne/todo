@@ -168,7 +168,8 @@
                                                    FontSize="12"
                                                    Foreground="{StaticResource TextSecondaryBrush}"
                                                    VerticalAlignment="Center"
-                                                   Margin="0,0,4,0" />
+                                                   Margin="0,0,4,0"
+                                                   Visibility="{Binding TaskCount, Converter={StaticResource PositiveCountToVis}}" />
                                         <Button Grid.Column="3"
                                                 Padding="2"
                                                 Command="{Binding DataContext.DeleteListCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -515,7 +516,7 @@
 
                         <!-- Due date section -->
                         <TextBlock Text="截止日期" Style="{StaticResource DetailLabel}" />
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <Button Content="今天"
                                     Style="{StaticResource IconButton}"
                                     Command="{Binding DataContext.SetDueDateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -540,6 +541,10 @@
                                     FontSize="12"
                                     Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}" />
                         </StackPanel>
+                        <DatePicker SelectedDate="{Binding DueDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    FontSize="13"
+                                    Margin="0,0,0,8"
+                                    HorizontalAlignment="Stretch" />
                         <TextBlock Text="{Binding DueDateDisplay}"
                                    FontSize="13"
                                    Foreground="{Binding Converter={StaticResource DueDateColor}}"

@@ -227,30 +227,31 @@ public class MainViewModel : ViewModelBase
         ActiveTasks.Clear();
         CompletedTasks.Clear();
 
-        if (SelectedList == null) return;
-
-        var active = TaskFilterService.FilterTasks(_appData.Tasks, SelectedList.Model)
-            .OrderBy(t => t.SortOrder)
-            .ThenByDescending(t => t.CreatedAt);
-
-        foreach (var task in active)
-            ActiveTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested));
-
-        var completed = TaskFilterService.FilterCompletedTasks(_appData.Tasks, SelectedList.Model)
-            .OrderByDescending(t => t.CompletedAt);
-
-        foreach (var task in completed)
-            CompletedTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested));
-
-        if (selectedId.HasValue)
+        if (SelectedList != null)
         {
-            var restored = ActiveTasks.FirstOrDefault(t => t.Id == selectedId.Value)
-                ?? CompletedTasks.FirstOrDefault(t => t.Id == selectedId.Value);
+            var active = TaskFilterService.FilterTasks(_appData.Tasks, SelectedList.Model)
+                .OrderBy(t => t.SortOrder)
+                .ThenByDescending(t => t.CreatedAt);
 
-            if (restored != null)
-                SelectedTask = restored;
-            else
-                CloseDetail();
+            foreach (var task in active)
+                ActiveTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
+
+            var completed = TaskFilterService.FilterCompletedTasks(_appData.Tasks, SelectedList.Model)
+                .OrderByDescending(t => t.CompletedAt);
+
+            foreach (var task in completed)
+                CompletedTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
+
+            if (selectedId.HasValue)
+            {
+                var restored = ActiveTasks.FirstOrDefault(t => t.Id == selectedId.Value)
+                    ?? CompletedTasks.FirstOrDefault(t => t.Id == selectedId.Value);
+
+                if (restored != null)
+                    SelectedTask = restored;
+                else
+                    CloseDetail();
+            }
         }
 
         OnPropertyChanged(nameof(HasCompletedTasks));
@@ -266,6 +267,13 @@ public class MainViewModel : ViewModelBase
     }
 
     private void OnTaskSaveRequested(TaskItemViewModel task) => SaveData();
+
+    private void OnTaskMetadataChanged(TaskItemViewModel task)
+    {
+        SaveData();
+        RefreshListCounts();
+        RefreshTasksIfSmartList(ListType.Important, ListType.MyDay, ListType.Planned, ListType.All);
+    }
 
     private void AddTask()
     {
@@ -294,6 +302,7 @@ public class MainViewModel : ViewModelBase
         _appData.Tasks.Add(task);
         NewTaskTitle = string.Empty;
         SaveData();
+        RefreshListCounts();
         RefreshTasks();
 
         var newVm = ActiveTasks.FirstOrDefault(t => t.Id == task.Id);
@@ -397,18 +406,21 @@ public class MainViewModel : ViewModelBase
 
     private void SetDueDate(object? parameter)
     {
-        if (SelectedTask == null || parameter is not string option) return;
+        if (SelectedTask == null) return;
 
-        SelectedTask.DueDate = option switch
+        SelectedTask.DueDate = parameter switch
         {
-            "today" => DateTime.Today,
-            "tomorrow" => DateTime.Today.AddDays(1),
-            "nextweek" => DateTime.Today.AddDays(7),
+            DateTime dt => dt.Date,
+            string option => option switch
+            {
+                "today" => DateTime.Today,
+                "tomorrow" => DateTime.Today.AddDays(1),
+                "nextweek" => DateTime.Today.AddDays(7),
+                _ => SelectedTask.DueDate
+            },
             _ => SelectedTask.DueDate
         };
 
-        SaveData();
-        RefreshListCounts();
         RefreshTasksIfSmartList(ListType.Planned);
     }
 
@@ -416,8 +428,6 @@ public class MainViewModel : ViewModelBase
     {
         if (SelectedTask == null) return;
         SelectedTask.DueDate = null;
-        SaveData();
-        RefreshListCounts();
         RefreshTasksIfSmartList(ListType.Planned);
     }
 
