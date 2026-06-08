@@ -160,6 +160,7 @@ public class TaskItemViewModel : ViewModelBase
 
     public void RefreshSteps()
     {
+        OnPropertyChanged(nameof(Steps));
         OnPropertyChanged(nameof(CompletedStepCount));
         OnPropertyChanged(nameof(TotalStepCount));
         OnPropertyChanged(nameof(HasSteps));

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
 namespace TodoApp.Models;
@@ -16,7 +17,7 @@ public class TodoTask
     public DateTime? CompletedAt { get; set; }
     public Guid ListId { get; set; }
     public int SortOrder { get; set; }
-    public List<TodoStep> Steps { get; set; } = [];
+    public ObservableCollection<TodoStep> Steps { get; set; } = [];
 
     [JsonIgnore]
     public bool HasDueDate => DueDate.HasValue;

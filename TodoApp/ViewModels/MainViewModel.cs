@@ -491,6 +491,9 @@ public class MainViewModel : ViewModelBase
 
     private void RefreshTaskStepDisplay(Guid taskId)
     {
+        if (SelectedTask?.Id == taskId)
+            SelectedTask.RefreshSteps();
+
         foreach (var task in ActiveTasks.Concat(CompletedTasks))
         {
             if (task.Id == taskId)
