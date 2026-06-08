@@ -127,15 +127,23 @@ public class TaskItemViewModel : ViewModelBase
     public bool IsOverdue => DueDate.HasValue && DueDate.Value.Date < DateTime.Today && !IsCompleted;
     public bool IsDueToday => DueDate.HasValue && DueDate.Value.Date == DateTime.Today;
 
-    public string DueDateDisplay => DueDate switch
+    public string DueDateDisplay
     {
-        null => string.Empty,
-        var d when d.Date == DateTime.Today => "今天",
-        var d when d.Date == DateTime.Today.AddDays(1) => "明天",
-        var d when d.Date == DateTime.Today.AddDays(-1) => "昨天",
-        var d when d.Date < DateTime.Today => d.ToString("M月d日"),
-        _ => DueDate!.Value.ToString("M月d日")
-    };
+        get
+        {
+            if (DueDate is not DateTime date)
+                return string.Empty;
+
+            return date.Date switch
+            {
+                var d when d == DateTime.Today => "今天",
+                var d when d == DateTime.Today.AddDays(1) => "明天",
+                var d when d == DateTime.Today.AddDays(-1) => "昨天",
+                var d when d < DateTime.Today => date.ToString("M月d日"),
+                _ => date.ToString("M月d日")
+            };
+        }
+    }
 
     public IList<TodoStep> Steps => Model.Steps;
 
