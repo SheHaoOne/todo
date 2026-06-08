@@ -4,7 +4,7 @@ namespace TodoApp.ViewModels;
 
 public class TaskItemViewModel : ViewModelBase
 {
-    private readonly Action<TaskItemViewModel>? _onChanged;
+    private readonly Action<TaskItemViewModel>? _onSaveRequested;
     private string _title = string.Empty;
     private bool _isCompleted;
     private bool _isImportant;
@@ -14,10 +14,10 @@ public class TaskItemViewModel : ViewModelBase
     private string _notes = string.Empty;
     private bool _isSelected;
 
-    public TaskItemViewModel(TodoTask task, Action<TaskItemViewModel>? onChanged = null)
+    public TaskItemViewModel(TodoTask task, Action<TaskItemViewModel>? onSaveRequested = null)
     {
         Model = task;
-        _onChanged = onChanged;
+        _onSaveRequested = onSaveRequested;
         _title = task.Title;
         _isCompleted = task.IsCompleted;
         _isImportant = task.IsImportant;
@@ -151,8 +151,7 @@ public class TaskItemViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalStepCount));
         OnPropertyChanged(nameof(HasSteps));
         OnPropertyChanged(nameof(StepProgress));
-        NotifyChanged();
     }
 
-    private void NotifyChanged() => _onChanged?.Invoke(this);
+    private void NotifyChanged() => _onSaveRequested?.Invoke(this);
 }

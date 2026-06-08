@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using TodoApp.ViewModels;
+using System.Windows.Input;
 
 namespace TodoApp;
 
@@ -11,21 +11,13 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
-    private void SmartList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void ActionButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is ListBox { SelectedItem: ListItemViewModel list }
-            && DataContext is MainViewModel vm)
-        {
-            vm.SelectListCommand.Execute(list);
-        }
+        e.Handled = true;
     }
 
-    private void TaskList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void DeleteListButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is ListBox { SelectedItem: TaskItemViewModel task }
-            && DataContext is MainViewModel vm)
-        {
-            vm.SelectTaskCommand.Execute(task);
-        }
+        e.Handled = true;
     }
 }

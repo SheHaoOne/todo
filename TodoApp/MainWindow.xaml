@@ -99,7 +99,6 @@
 
                         <ListBox ItemsSource="{Binding SmartLists}"
                                  SelectedItem="{Binding SelectedList}"
-                                 SelectionChanged="SmartList_SelectionChanged"
                                  BorderThickness="0"
                                  Background="Transparent"
                                  ItemContainerStyle="{StaticResource SidebarListItem}">
@@ -128,7 +127,7 @@
                                                    FontSize="12"
                                                    Foreground="{StaticResource TextSecondaryBrush}"
                                                    VerticalAlignment="Center"
-                                                   Visibility="{Binding TaskCount, Converter={StaticResource NullToVis}}" />
+                                                   Visibility="{Binding TaskCount, Converter={StaticResource PositiveCountToVis}}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -142,7 +141,6 @@
 
                         <ListBox ItemsSource="{Binding CustomLists}"
                                  SelectedItem="{Binding SelectedList}"
-                                 SelectionChanged="SmartList_SelectionChanged"
                                  BorderThickness="0"
                                  Background="Transparent"
                                  ItemContainerStyle="{StaticResource SidebarListItem}">
@@ -175,7 +173,8 @@
                                                 Padding="2"
                                                 Command="{Binding DataContext.DeleteListCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
-                                                ToolTip="删除列表">
+                                                ToolTip="删除列表"
+                                                PreviewMouseLeftButtonDown="DeleteListButton_PreviewMouseLeftButtonDown">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
                                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -251,7 +250,6 @@
                     <!-- Active tasks -->
                     <ListBox ItemsSource="{Binding ActiveTasks}"
                              SelectedItem="{Binding SelectedTask}"
-                             SelectionChanged="TaskList_SelectionChanged"
                              BorderThickness="0"
                              Background="Transparent"
                              ItemContainerStyle="{StaticResource TaskListItem}">
@@ -271,6 +269,7 @@
                                             Style="{StaticResource CircleCheckButton}"
                                             Command="{Binding DataContext.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}"
+                                            PreviewMouseLeftButtonDown="ActionButton_PreviewMouseLeftButtonDown"
                                             VerticalAlignment="Center"
                                             Margin="0,0,12,0" />
 
@@ -306,6 +305,7 @@
                                             Command="{Binding DataContext.ToggleMyDayCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}"
                                             ToolTip="添加到我的一天"
+                                            PreviewMouseLeftButtonDown="ActionButton_PreviewMouseLeftButtonDown"
                                             VerticalAlignment="Center"
                                             Margin="0,0,2,0">
                                         <TextBlock Text="&#xE706;"
@@ -330,6 +330,7 @@
                                             Command="{Binding DataContext.ToggleImportantCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}"
                                             ToolTip="标记为重要"
+                                            PreviewMouseLeftButtonDown="ActionButton_PreviewMouseLeftButtonDown"
                                             VerticalAlignment="Center">
                                         <TextBlock Text="&#xE735;"
                                                    FontFamily="{StaticResource IconFont}"
@@ -387,6 +388,7 @@
                                             Style="{StaticResource CircleCheckButton}"
                                             Command="{Binding DataContext.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}"
+                                            PreviewMouseLeftButtonDown="ActionButton_PreviewMouseLeftButtonDown"
                                             VerticalAlignment="Center"
                                             Margin="0,0,12,0" />
                                     <TextBlock Grid.Column="1"

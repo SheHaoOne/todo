@@ -37,5 +37,11 @@ public class ListItemViewModel : ViewModelBase
         set => SetProperty(ref _isSelected, value);
     }
 
-    public int TaskCount { get; set; }
+    private int _taskCount;
+
+    public int TaskCount
+    {
+        get => _taskCount;
+        set => SetProperty(ref _taskCount, value);
+    }
 }

@@ -61,8 +61,14 @@ public class MainViewModel : ViewModelBase
         set
         {
             if (!SetProperty(ref _selectedList, value)) return;
-            RefreshTasks();
+
+            foreach (var item in SmartLists.Concat(CustomLists))
+                item.IsSelected = item == value;
+
+            OnPropertyChanged(nameof(HeaderTitle));
+            OnPropertyChanged(nameof(HeaderSubtitle));
             CloseDetail();
+            RefreshTasks();
         }
     }
 
@@ -71,10 +77,13 @@ public class MainViewModel : ViewModelBase
         get => _selectedTask;
         set
         {
+            if (ReferenceEquals(_selectedTask, value)) return;
+
             if (_selectedTask != null)
                 _selectedTask.IsSelected = false;
 
-            if (!SetProperty(ref _selectedTask, value)) return;
+            _selectedTask = value;
+            OnPropertyChanged();
 
             if (_selectedTask != null)
                 _selectedTask.IsSelected = true;
@@ -87,19 +96,31 @@ public class MainViewModel : ViewModelBase
     public string NewTaskTitle
     {
         get => _newTaskTitle;
-        set => SetProperty(ref _newTaskTitle, value);
+        set
+        {
+            if (SetProperty(ref _newTaskTitle, value))
+                CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     public string NewListName
     {
         get => _newListName;
-        set => SetProperty(ref _newListName, value);
+        set
+        {
+            if (SetProperty(ref _newListName, value))
+                CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     public string NewStepTitle
     {
         get => _newStepTitle;
-        set => SetProperty(ref _newStepTitle, value);
+        set
+        {
+            if (SetProperty(ref _newStepTitle, value))
+                CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     public bool ShowCompleted
@@ -191,14 +212,7 @@ public class MainViewModel : ViewModelBase
     private void SelectList(ListItemViewModel? list)
     {
         if (list == null) return;
-
-        foreach (var item in SmartLists.Concat(CustomLists))
-            item.IsSelected = false;
-
-        list.IsSelected = true;
         SelectedList = list;
-        OnPropertyChanged(nameof(HeaderTitle));
-        OnPropertyChanged(nameof(HeaderSubtitle));
     }
 
     private void SelectTask(TaskItemViewModel? task)
@@ -208,6 +222,8 @@ public class MainViewModel : ViewModelBase
 
     private void RefreshTasks()
     {
+        var selectedId = SelectedTask?.Id;
+
         ActiveTasks.Clear();
         CompletedTasks.Clear();
 
@@ -218,13 +234,24 @@ public class MainViewModel : ViewModelBase
             .ThenByDescending(t => t.CreatedAt);
 
         foreach (var task in active)
-            ActiveTasks.Add(new TaskItemViewModel(task, OnTaskChanged));
+            ActiveTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested));
 
         var completed = TaskFilterService.FilterCompletedTasks(_appData.Tasks, SelectedList.Model)
             .OrderByDescending(t => t.CompletedAt);
 
         foreach (var task in completed)
-            CompletedTasks.Add(new TaskItemViewModel(task, OnTaskChanged));
+            CompletedTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested));
+
+        if (selectedId.HasValue)
+        {
+            var restored = ActiveTasks.FirstOrDefault(t => t.Id == selectedId.Value)
+                ?? CompletedTasks.FirstOrDefault(t => t.Id == selectedId.Value);
+
+            if (restored != null)
+                SelectedTask = restored;
+            else
+                CloseDetail();
+        }
 
         OnPropertyChanged(nameof(HasCompletedTasks));
         OnPropertyChanged(nameof(CompletedToggleText));
@@ -238,19 +265,12 @@ public class MainViewModel : ViewModelBase
             list.TaskCount = CountActiveTasks(list.Model);
     }
 
-    private void OnTaskChanged(TaskItemViewModel task)
-    {
-        SaveData();
-        RefreshTasks();
-
-        if (SelectedTask?.Id == task.Id)
-            SelectedTask = ActiveTasks.FirstOrDefault(t => t.Id == task.Id)
-                ?? CompletedTasks.FirstOrDefault(t => t.Id == task.Id);
-    }
+    private void OnTaskSaveRequested(TaskItemViewModel task) => SaveData();
 
     private void AddTask()
     {
         if (string.IsNullOrWhiteSpace(NewTaskTitle) || SelectedList == null) return;
+        if (SelectedList.Type == ListType.Completed) return;
 
         var listId = SelectedList.Type == ListType.Custom
             ? SelectedList.Id
@@ -295,6 +315,7 @@ public class MainViewModel : ViewModelBase
         task.IsImportant = !task.IsImportant;
         SaveData();
         RefreshListCounts();
+        RefreshTasksIfSmartList(ListType.Important);
     }
 
     private void ToggleMyDay(TaskItemViewModel? task)
@@ -303,6 +324,7 @@ public class MainViewModel : ViewModelBase
         task.IsMyDay = !task.IsMyDay;
         SaveData();
         RefreshListCounts();
+        RefreshTasksIfSmartList(ListType.MyDay);
     }
 
     private void DeleteTask(TaskItemViewModel? task)
@@ -387,6 +409,7 @@ public class MainViewModel : ViewModelBase
 
         SaveData();
         RefreshListCounts();
+        RefreshTasksIfSmartList(ListType.Planned);
     }
 
     private void ClearDueDate()
@@ -395,6 +418,7 @@ public class MainViewModel : ViewModelBase
         SelectedTask.DueDate = null;
         SaveData();
         RefreshListCounts();
+        RefreshTasksIfSmartList(ListType.Planned);
     }
 
     private void CloseDetail()
@@ -414,7 +438,7 @@ public class MainViewModel : ViewModelBase
         });
 
         NewStepTitle = string.Empty;
-        SelectedTask.RefreshSteps();
+        RefreshTaskStepDisplay(SelectedTask.Id);
         SaveData();
     }
 
@@ -422,7 +446,7 @@ public class MainViewModel : ViewModelBase
     {
         if (step == null || SelectedTask == null) return;
         step.IsCompleted = !step.IsCompleted;
-        SelectedTask.RefreshSteps();
+        RefreshTaskStepDisplay(SelectedTask.Id);
         SaveData();
     }
 
@@ -430,8 +454,23 @@ public class MainViewModel : ViewModelBase
     {
         if (step == null || SelectedTask == null) return;
         SelectedTask.Steps.Remove(step);
-        SelectedTask.RefreshSteps();
+        RefreshTaskStepDisplay(SelectedTask.Id);
         SaveData();
+    }
+
+    private void RefreshTaskStepDisplay(Guid taskId)
+    {
+        foreach (var task in ActiveTasks.Concat(CompletedTasks))
+        {
+            if (task.Id == taskId)
+                task.RefreshSteps();
+        }
+    }
+
+    private void RefreshTasksIfSmartList(params ListType[] types)
+    {
+        if (SelectedList != null && types.Contains(SelectedList.Type))
+            RefreshTasks();
     }
 
     private void SaveData() => _dataService.Save(_appData);

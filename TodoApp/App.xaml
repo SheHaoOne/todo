@@ -11,6 +11,7 @@
         <conv:DueDateColorConverter x:Key="DueDateColor" />
         <conv:ImportantStarConverter x:Key="ImportantStar" />
         <conv:ZeroCountToVisibilityConverter x:Key="ZeroCountToVis" />
+        <conv:PositiveCountToVisibilityConverter x:Key="PositiveCountToVis" />
 
         <!-- Microsoft To Do color palette -->
         <Color x:Key="PrimaryBlue">#0078D4</Color>

@@ -34,12 +34,31 @@ public class JsonDataService : IDataService
         try
         {
             var json = File.ReadAllText(DataFilePath);
-            return JsonSerializer.Deserialize<AppData>(json, JsonOptions) ?? CreateDefaultData();
+            var data = JsonSerializer.Deserialize<AppData>(json, JsonOptions);
+            return data is null ? CreateDefaultData() : EnsureDefaults(data);
         }
         catch
         {
             return CreateDefaultData();
         }
+    }
+
+    private static AppData EnsureDefaults(AppData data)
+    {
+        data.Lists ??= [];
+        data.Tasks ??= [];
+
+        var defaults = CreateDefaultData();
+        foreach (var defaultList in defaults.Lists.Where(l => l.IsSmartList))
+        {
+            if (data.Lists.All(l => l.Id != defaultList.Id))
+                data.Lists.Add(defaultList);
+        }
+
+        if (data.Lists.All(l => l.Type != ListType.Custom))
+            data.Lists.Add(defaults.Lists.First(l => l.Type == ListType.Custom));
+
+        return data;
     }
 
     public void Save(AppData data)
