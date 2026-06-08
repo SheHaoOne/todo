@@ -201,7 +201,9 @@
         </Border>
 
         <!-- ========== MAIN CONTENT ========== -->
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1"
+              Background="Transparent"
+              PreviewMouseLeftButtonDown="MainContent_PreviewMouseLeftButtonDown">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -249,7 +251,8 @@
             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- Active tasks -->
-                    <ListBox ItemsSource="{Binding ActiveTasks}"
+                    <ListBox x:Name="ActiveTaskListBox"
+                             ItemsSource="{Binding ActiveTasks}"
                              SelectedItem="{Binding SelectedTask, Mode=OneWay}"
                              SelectionChanged="TaskList_SelectionChanged"
                              BorderThickness="0"
@@ -434,7 +437,7 @@
                 <!-- Close button -->
                 <Button DockPanel.Dock="Top"
                         Style="{StaticResource IconButton}"
-                        Command="{Binding CloseDetailCommand}"
+                        Click="CloseDetailButton_Click"
                         HorizontalAlignment="Right"
                         Margin="0,0,0,8"
                         ToolTip="关闭">
