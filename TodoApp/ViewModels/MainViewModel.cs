@@ -303,7 +303,7 @@ public class MainViewModel : ViewModelBase
 
         var listId = SelectedList.Type == ListType.Custom
             ? SelectedList.Id
-            : CustomLists.FirstOrDefault()?.Id ?? _appData.Lists.First(l => l.Type == ListType.Custom).Id;
+            : GetOrCreateDefaultCustomListId();
 
         var task = new TodoTask
         {
@@ -402,9 +402,39 @@ public class MainViewModel : ViewModelBase
             SelectList(newVm);
     }
 
+    private Guid GetOrCreateDefaultCustomListId()
+    {
+        var custom = _appData.Lists.FirstOrDefault(l => l.Type == ListType.Custom);
+        if (custom != null)
+            return custom.Id;
+
+        var list = new TodoList
+        {
+            Name = "任务",
+            Type = ListType.Custom,
+            SortOrder = _appData.Lists.Count,
+            IconGlyph = "\uE8FD",
+            Color = ListColorPalette.GetColor(0)
+        };
+
+        _appData.Lists.Add(list);
+        RefreshLists();
+        return list.Id;
+    }
+
     private void DeleteList(ListItemViewModel? list)
     {
         if (list == null || list.IsSmartList) return;
+
+        if (_appData.Lists.Count(l => l.Type == ListType.Custom) <= 1)
+        {
+            MessageBox.Show(
+                "至少需要保留一个任务列表。",
+                "无法删除",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
 
         var result = MessageBox.Show(
             $"确定要删除列表「{list.Name}」及其所有任务吗？",
