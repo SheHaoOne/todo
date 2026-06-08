@@ -49,6 +49,41 @@ public partial class MainWindow : Window
         ExecuteButtonCommand(sender);
     }
 
+    private void RenameListTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox || !textBox.IsVisible)
+            return;
+
+        textBox.Focus();
+        textBox.SelectAll();
+    }
+
+    private void RenameListTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox { DataContext: ListItemViewModel list }
+            && DataContext is MainViewModel vm)
+        {
+            vm.CommitRenameListCommand.Execute(list);
+        }
+    }
+
+    private void RenameListTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox textBox || DataContext is not MainViewModel vm)
+            return;
+
+        if (e.Key == Key.Enter)
+        {
+            vm.CommitRenameListCommand.Execute(textBox.DataContext);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && textBox.DataContext is ListItemViewModel list)
+        {
+            list.CancelRenameMode();
+            e.Handled = true;
+        }
+    }
+
     private void MainContent_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is not MainViewModel vm || !vm.IsDetailPanelOpen)

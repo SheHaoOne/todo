@@ -152,17 +152,36 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Ellipse Grid.Column="0"
                                                  Width="10" Height="10"
                                                  Fill="{Binding Color, Converter={StaticResource HexToBrush}}"
                                                  VerticalAlignment="Center"
                                                  Margin="4,0,10,0" />
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding Name}"
-                                                   FontSize="14"
-                                                   Foreground="{StaticResource TextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="14"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisInvert}}">
+                                                <TextBlock.InputBindings>
+                                                    <MouseBinding MouseAction="LeftDoubleClick"
+                                                                  Command="{Binding DataContext.BeginRenameListCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                  CommandParameter="{Binding}" />
+                                                </TextBlock.InputBindings>
+                                            </TextBlock>
+                                            <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}"
+                                                     FontSize="14"
+                                                     Padding="0"
+                                                     BorderThickness="0,0,0,1"
+                                                     BorderBrush="{StaticResource PrimaryBlueBrush}"
+                                                     Background="Transparent"
+                                                     Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}"
+                                                     IsVisibleChanged="RenameListTextBox_IsVisibleChanged"
+                                                     LostFocus="RenameListTextBox_LostFocus"
+                                                     KeyDown="RenameListTextBox_KeyDown" />
+                                        </Grid>
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding TaskCount}"
                                                    FontSize="12"
@@ -171,6 +190,27 @@
                                                    Margin="0,0,4,0"
                                                    Visibility="{Binding TaskCount, Converter={StaticResource PositiveCountToVis}}" />
                                         <Button Grid.Column="3"
+                                                Padding="2"
+                                                Command="{Binding DataContext.BeginRenameListCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="重命名"
+                                                PreviewMouseLeftButtonDown="DeleteListButton_PreviewMouseLeftButtonDown">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSmartList}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <TextBlock Text="&#xE70F;"
+                                                       FontFamily="{StaticResource IconFont}"
+                                                       FontSize="10"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                        </Button>
+                                        <Button Grid.Column="4"
                                                 Padding="2"
                                                 Command="{Binding DataContext.DeleteListCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
@@ -213,10 +253,22 @@
 
             <!-- Header -->
             <StackPanel Grid.Row="0" Margin="24,20,24,8">
-                <TextBlock Text="{Binding HeaderTitle}"
-                           FontSize="28"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <Grid>
+                    <TextBlock Text="{Binding HeaderTitle}"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Visibility="{Binding CanRenameSelectedList, Converter={StaticResource BoolToVisInvert}}" />
+                    <TextBox Text="{Binding SelectedListName, UpdateSourceTrigger=LostFocus}"
+                             FontSize="28"
+                             FontWeight="SemiBold"
+                             Foreground="{StaticResource TextPrimaryBrush}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             ToolTip="编辑列表名称"
+                             Visibility="{Binding CanRenameSelectedList, Converter={StaticResource BoolToVis}}" />
+                </Grid>
                 <TextBlock Text="{Binding HeaderSubtitle}"
                            FontSize="13"
                            Foreground="{StaticResource TextSecondaryBrush}"

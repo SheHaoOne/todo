@@ -4,12 +4,16 @@ namespace TodoApp.ViewModels;
 
 public class ListItemViewModel : ViewModelBase
 {
+    private readonly Action<ListItemViewModel>? _onNameChanged;
     private bool _isSelected;
+    private bool _isRenaming;
     private string _name;
+    private string _nameBeforeRename = string.Empty;
 
-    public ListItemViewModel(TodoList list)
+    public ListItemViewModel(TodoList list, Action<ListItemViewModel>? onNameChanged = null)
     {
         Model = list;
+        _onNameChanged = onNameChanged;
         _name = list.Name;
     }
 
@@ -28,7 +32,33 @@ public class ListItemViewModel : ViewModelBase
         {
             if (!SetProperty(ref _name, value)) return;
             Model.Name = value;
+            _onNameChanged?.Invoke(this);
         }
+    }
+
+    public bool IsRenaming
+    {
+        get => _isRenaming;
+        set => SetProperty(ref _isRenaming, value);
+    }
+
+    public void EnterRenameMode()
+    {
+        _nameBeforeRename = Name;
+        IsRenaming = true;
+    }
+
+    public void ExitRenameMode()
+    {
+        IsRenaming = false;
+        var trimmed = Name.Trim();
+        Name = string.IsNullOrWhiteSpace(trimmed) ? _nameBeforeRename : trimmed;
+    }
+
+    public void CancelRenameMode()
+    {
+        IsRenaming = false;
+        Name = _nameBeforeRename;
     }
 
     public bool IsSelected

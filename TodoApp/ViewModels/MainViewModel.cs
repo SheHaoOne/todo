@@ -40,6 +40,8 @@ public class MainViewModel : ViewModelBase
         DeleteTaskCommand = new RelayCommand(p => DeleteTask(p as TaskItemViewModel));
         AddListCommand = new RelayCommand(AddList, () => !string.IsNullOrWhiteSpace(NewListName));
         DeleteListCommand = new RelayCommand(p => DeleteList(p as ListItemViewModel), p => p is ListItemViewModel { IsSmartList: false });
+        BeginRenameListCommand = new RelayCommand(p => BeginRenameList(p as ListItemViewModel), p => p is ListItemViewModel { IsSmartList: false });
+        CommitRenameListCommand = new RelayCommand(p => CommitRenameList(p as ListItemViewModel));
         SetDueDateCommand = new RelayCommand(p => SetDueDate(p));
         ClearDueDateCommand = new RelayCommand(_ => ClearDueDate(), _ => SelectedTask?.DueDate != null);
         CloseDetailCommand = new RelayCommand(_ => CloseDetail());
@@ -68,6 +70,8 @@ public class MainViewModel : ViewModelBase
 
             OnPropertyChanged(nameof(HeaderTitle));
             OnPropertyChanged(nameof(HeaderSubtitle));
+            OnPropertyChanged(nameof(CanRenameSelectedList));
+            OnPropertyChanged(nameof(SelectedListName));
             CloseDetail();
             RefreshTasks();
         }
@@ -146,7 +150,15 @@ public class MainViewModel : ViewModelBase
     public string CompletedToggleText => ShowCompleted ? "隐藏已完成" : $"已完成 ({CompletedTasks.Count})";
     public string DataFilePath => _dataService.DataFilePath;
 
+    public bool CanRenameSelectedList => SelectedList is { IsSmartList: false };
+
     public string HeaderTitle => SelectedList?.Name ?? "任务";
+
+    public string SelectedListName
+    {
+        get => SelectedList?.Name ?? string.Empty;
+        set => RenameList(SelectedList, value);
+    }
     public string HeaderSubtitle => SelectedList?.Type switch
     {
         ListType.MyDay => DateTime.Now.ToString("M月d日 dddd"),
@@ -166,6 +178,8 @@ public class MainViewModel : ViewModelBase
     public ICommand DeleteTaskCommand { get; }
     public ICommand AddListCommand { get; }
     public ICommand DeleteListCommand { get; }
+    public ICommand BeginRenameListCommand { get; }
+    public ICommand CommitRenameListCommand { get; }
     public ICommand SetDueDateCommand { get; }
     public ICommand ClearDueDateCommand { get; }
     public ICommand CloseDetailCommand { get; }
@@ -194,7 +208,7 @@ public class MainViewModel : ViewModelBase
 
         foreach (var list in _appData.Lists.OrderBy(l => l.SortOrder))
         {
-            var vm = new ListItemViewModel(list)
+            var vm = new ListItemViewModel(list, OnListNameChanged)
             {
                 TaskCount = CountActiveTasks(list)
             };
@@ -400,6 +414,51 @@ public class MainViewModel : ViewModelBase
         var newVm = CustomLists.FirstOrDefault(l => l.Id == list.Id);
         if (newVm != null)
             SelectList(newVm);
+    }
+
+    private void OnListNameChanged(ListItemViewModel list)
+    {
+        SaveData();
+        if (SelectedList?.Id == list.Id)
+        {
+            OnPropertyChanged(nameof(HeaderTitle));
+            OnPropertyChanged(nameof(SelectedListName));
+        }
+    }
+
+    private void RenameList(ListItemViewModel? list, string newName)
+    {
+        if (list is not { IsSmartList: false }) return;
+
+        var trimmed = newName.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            OnPropertyChanged(nameof(SelectedListName));
+            return;
+        }
+
+        if (list.Name == trimmed) return;
+
+        list.Name = trimmed;
+        OnPropertyChanged(nameof(HeaderTitle));
+        OnPropertyChanged(nameof(SelectedListName));
+    }
+
+    private void BeginRenameList(ListItemViewModel? list)
+    {
+        if (list is not { IsSmartList: false }) return;
+
+        foreach (var item in CustomLists)
+            item.IsRenaming = false;
+
+        SelectList(list);
+        list.EnterRenameMode();
+    }
+
+    private void CommitRenameList(ListItemViewModel? list)
+    {
+        if (list is null || list.IsSmartList) return;
+        list.ExitRenameMode();
     }
 
     private Guid GetOrCreateDefaultCustomListId()
