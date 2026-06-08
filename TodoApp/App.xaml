@@ -12,6 +12,7 @@
         <conv:ImportantStarConverter x:Key="ImportantStar" />
         <conv:ZeroCountToVisibilityConverter x:Key="ZeroCountToVis" />
         <conv:PositiveCountToVisibilityConverter x:Key="PositiveCountToVis" />
+        <conv:HexToBrushConverter x:Key="HexToBrush" />
 
         <!-- Microsoft To Do color palette -->
         <Color x:Key="PrimaryBlue">#0078D4</Color>

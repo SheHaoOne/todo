@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using TodoApp.Helpers;
 using TodoApp.Models;
 
 namespace TodoApp.Services;
@@ -58,6 +59,8 @@ public class JsonDataService : IDataService
         if (data.Lists.All(l => l.Type != ListType.Custom))
             data.Lists.Add(defaults.Lists.First(l => l.Type == ListType.Custom));
 
+        AssignCustomListColors(data);
+
         return data;
     }
 
@@ -65,6 +68,17 @@ public class JsonDataService : IDataService
     {
         var json = JsonSerializer.Serialize(data, JsonOptions);
         File.WriteAllText(DataFilePath, json);
+    }
+
+    private static void AssignCustomListColors(AppData data)
+    {
+        var customLists = data.Lists
+            .Where(l => l.Type == ListType.Custom)
+            .OrderBy(l => l.SortOrder)
+            .ToList();
+
+        for (var i = 0; i < customLists.Count; i++)
+            customLists[i].Color = ListColorPalette.GetColor(i);
     }
 
     private static AppData CreateDefaultData()

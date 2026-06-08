@@ -381,13 +381,15 @@ public class MainViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(NewListName)) return;
 
+        var customListCount = _appData.Lists.Count(l => l.Type == ListType.Custom);
+
         var list = new TodoList
         {
             Name = NewListName.Trim(),
             Type = ListType.Custom,
             SortOrder = _appData.Lists.Count,
             IconGlyph = "\uE8FD",
-            Color = "#0078D4"
+            Color = ListColorPalette.GetColor(customListCount)
         };
 
         _appData.Lists.Add(list);

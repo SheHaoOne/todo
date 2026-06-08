@@ -155,7 +155,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Ellipse Grid.Column="0"
                                                  Width="10" Height="10"
-                                                 Fill="{StaticResource PrimaryBlueBrush}"
+                                                 Fill="{Binding Color, Converter={StaticResource HexToBrush}}"
                                                  VerticalAlignment="Center"
                                                  Margin="4,0,10,0" />
                                         <TextBlock Grid.Column="1"
