@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using TodoApp.Models;
 using TodoApp.ViewModels;
 
 namespace TodoApp;
@@ -99,6 +100,14 @@ public partial class MainWindow : Window
             return;
 
         CloseDetailPanel();
+    }
+
+    private void StepTitleTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox { DataContext: TodoStep step } || DataContext is not MainViewModel vm)
+            return;
+
+        vm.CommitStepEditCommand.Execute(step);
     }
 
     private void CloseDetailButton_Click(object sender, RoutedEventArgs e)
