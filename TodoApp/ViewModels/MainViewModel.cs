@@ -48,6 +48,9 @@ public class MainViewModel : ViewModelBase
         AddStepCommand = new RelayCommand(AddStep, () => !string.IsNullOrWhiteSpace(NewStepTitle) && SelectedTask != null);
         ToggleStepCommand = new RelayCommand(p => ToggleStep(p as TodoStep));
         DeleteStepCommand = new RelayCommand(p => DeleteStep(p as TodoStep));
+        CommitStepEditCommand = new RelayCommand(p => CommitStepEdit(p as TodoStep));
+        ReorderTasksCommand = new RelayCommand(p => ReorderTasks(p), _ => CanReorderTasks);
+        ReorderStepsCommand = new RelayCommand(p => ReorderSteps(p), _ => SelectedTask != null);
         ToggleShowCompletedCommand = new RelayCommand(_ => ShowCompleted = !ShowCompleted);
 
         LoadData();
@@ -72,6 +75,7 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(HeaderSubtitle));
             OnPropertyChanged(nameof(CanRenameSelectedList));
             OnPropertyChanged(nameof(SelectedListName));
+            OnPropertyChanged(nameof(CanReorderTasks));
             CloseDetail();
             RefreshTasks();
         }
@@ -186,7 +190,15 @@ public class MainViewModel : ViewModelBase
     public ICommand AddStepCommand { get; }
     public ICommand ToggleStepCommand { get; }
     public ICommand DeleteStepCommand { get; }
+    public ICommand CommitStepEditCommand { get; }
+    public ICommand ReorderTasksCommand { get; }
+    public ICommand ReorderStepsCommand { get; }
     public ICommand ToggleShowCompletedCommand { get; }
+
+    public bool CanReorderTasks => SelectedList?.Type is ListType.Custom
+        or ListType.MyDay
+        or ListType.Important
+        or ListType.All;
 
     private void LoadData()
     {
@@ -233,6 +245,9 @@ public class MainViewModel : ViewModelBase
 
     private void SelectTask(TaskItemViewModel? task)
     {
+        if (task != null)
+            EnsureStepsSorted(task.Model);
+
         SelectedTask = task;
     }
 
@@ -254,7 +269,10 @@ public class MainViewModel : ViewModelBase
                     .ThenByDescending(t => t.CreatedAt);
 
                 foreach (var task in active)
+                {
+                    EnsureStepsSorted(task);
                     ActiveTasks.Add(new TaskItemViewModel(task, OnTaskSaveRequested, OnTaskMetadataChanged));
+                }
 
                 var completed = TaskFilterService.FilterCompletedTasks(_appData.Tasks, SelectedList.Model)
                     .OrderByDescending(t => t.CompletedAt);
@@ -324,7 +342,7 @@ public class MainViewModel : ViewModelBase
             Title = NewTaskTitle.Trim(),
             ListId = listId,
             IsMyDay = SelectedList.Type == ListType.MyDay,
-            SortOrder = _appData.Tasks.Count,
+            SortOrder = GetNextTaskSortOrder(listId),
             CreatedAt = DateTime.Now
         };
 
@@ -576,8 +594,59 @@ public class MainViewModel : ViewModelBase
     {
         if (step == null || SelectedTask == null) return;
         SelectedTask.Steps.Remove(step);
+        CollectionReorderHelper.ReindexSortOrder(SelectedTask.Steps, (s, i) => s.SortOrder = i);
         RefreshTaskStepDisplay(SelectedTask.Id);
         SaveData();
+    }
+
+    private void CommitStepEdit(TodoStep? step)
+    {
+        if (step == null || SelectedTask == null) return;
+
+        step.Title = step.Title.Trim();
+        RefreshTaskStepDisplay(SelectedTask.Id);
+        SaveData();
+    }
+
+    private void ReorderTasks(object? parameter)
+    {
+        if (parameter is not ReorderInfo info || SelectedList == null || !CanReorderTasks) return;
+
+        CollectionReorderHelper.MoveItem(ActiveTasks, info.OldIndex, info.NewIndex);
+        CollectionReorderHelper.ReindexSortOrder(ActiveTasks, (task, index) => task.Model.SortOrder = index);
+        SaveData();
+    }
+
+    private void ReorderSteps(object? parameter)
+    {
+        if (parameter is not ReorderInfo info || SelectedTask == null) return;
+
+        var steps = SelectedTask.Steps;
+        CollectionReorderHelper.MoveItem(steps, info.OldIndex, info.NewIndex);
+        CollectionReorderHelper.ReindexSortOrder(steps, (step, index) => step.SortOrder = index);
+        RefreshTaskStepDisplay(SelectedTask.Id);
+        SaveData();
+    }
+
+    private static void EnsureStepsSorted(TodoTask task)
+    {
+        var sorted = task.Steps.OrderBy(s => s.SortOrder).ToList();
+        if (sorted.SequenceEqual(task.Steps)) return;
+
+        task.Steps.Clear();
+        foreach (var step in sorted)
+            task.Steps.Add(step);
+    }
+
+    private int GetNextTaskSortOrder(Guid listId)
+    {
+        var maxOrder = _appData.Tasks
+            .Where(t => t.ListId == listId && !t.IsCompleted)
+            .Select(t => t.SortOrder)
+            .DefaultIfEmpty(-1)
+            .Max();
+
+        return maxOrder + 1;
     }
 
     private void RefreshTaskStepDisplay(Guid taskId)
